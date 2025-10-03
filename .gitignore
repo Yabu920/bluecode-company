@@ -1,0 +1,8 @@
+.vercel
+.node_modules
+.next
+
+/.vercel
+/dist
+/node_modules
+/build

@@ -1,0 +1,16 @@
+[
+  {
+    "_id": "1758127029096",
+    "title": "BYD Furniture",
+    "type": "website",
+    "description": "build website for BYD",
+    "category": "Web Development",
+    "year": "2025",
+    "tech": [
+      "Next.js",
+      "TailwindCSS",
+      "TypeScript"
+    ],
+    "image": "Screenshot (5) - Copy - Copy.png"
+  }
+]
