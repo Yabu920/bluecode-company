@@ -245,7 +245,7 @@
 //               {language === 'en' ? 'Ready to Start Your Project?' : 'ፕሮጀክትዎን ለመጀመር ዝግጁ ነዎት?'}
 //             </h2>
 //             <p className="text-xl text-blue-100 mb-8">
-//               {language === 'en' 
+//               {language === 'en'
 //                 ? "Let's create something amazing together. Contact us today to discuss your ideas."
 //                 : "አብረን አስደናቂ ነገር እንፍጠር። ስለ ሀሳቦችዎ ለመወያየት ዛሬ ያግኙን።"
 //               }
@@ -261,16 +261,10 @@
 // }
 
 
-
+// app/portfolio/page.tsx
 "use client";
-
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Github } from "lucide-react";
 
 interface Project {
   title: string;
@@ -280,104 +274,87 @@ interface Project {
   year: string;
   tech: string[];
   image?: string;
-  liveDemo?: string;
-  sourceCode?: string;
 }
 
 export default function PortfolioPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("public/data/projects.json")
-      .then((res) => res.json())
-      .then((data) => setProjects(data.projects || []))
-      .catch((err) => console.error("Failed to load projects:", err));
+    const fetchProjects = async () => {
+      try {
+        const res = await fetch("/api/projects", { cache: "no-store" });
+        const data = await res.json();
+        console.log("✅ API response:", data);
+
+        // Handle both possible shapes: either an array or {projects: []}
+        if (Array.isArray(data)) {
+          setProjects(data);
+        } else if (data.projects) {
+          setProjects(data.projects);
+        } else {
+          setProjects([]);
+        }
+      } catch (err) {
+        console.error("❌ Failed to load projects:", err);
+      } finally {
+        setLoading(false); // ✅ always stop loading
+      }
+    };
+
+    fetchProjects();
   }, []);
+
+  if (loading) return <p className="text-center py-20">Loading projects...</p>;
+
+  if (!projects.length)
+    return (
+      <p className="text-center py-20">
+        No projects found. Add some in the dashboard!
+      </p>
+    );
 
   return (
     <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.map((project, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <Card className="h-full hover:shadow-lg transition-shadow duration-300 group">
-                <CardContent className="p-0">
-                  <div className="relative overflow-hidden">
-                    {project.image ? (
-                      <Image
-                        src={project.image}
-                        alt={project.title}
-                        width={500}
-                        height={300}
-                        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                        No Image
-                      </div>
-                    )}
+      <div className="container mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {projects.map((project, i) => (
+          <div
+            key={i}
+            className="border rounded overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+          >
+            {project.image ? (
+              <Image
+                src={project.image}
+                alt={project.title}
+                width={500}
+                height={300}
+                className="w-full h-48 object-cover"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
+                No Image
+              </div>
+            )}
 
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex space-x-4">
-                        {project.liveDemo && (
-                          <a
-                            href={project.liveDemo}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-sm bg-white text-gray-900 px-3 py-1 rounded hover:bg-gray-100 transition"
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Live Demo
-                          </a>
-                        )}
-                        {project.sourceCode && (
-                          <a
-                            href={project.sourceCode}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-sm border border-white text-white px-3 py-1 rounded hover:bg-white hover:text-gray-900 transition"
-                          >
-                            <Github className="h-4 w-4 mr-2" />
-                            Source Code
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge variant="secondary">{project.category}</Badge>
-                      <span className="text-sm text-gray-500">{project.year}</span>
-                    </div>
-
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      {project.title}
-                    </h3>
-
-                    <p className="text-blue-600 font-medium mb-3">{project.type}</p>
-
-                    <p className="text-gray-600 mb-4 text-sm">{project.description}</p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {project.tech.map((tech, techIndex) => (
-                        <Badge key={techIndex} variant="outline" className="text-xs">
-                          {tech}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-lg">{project.title}</h3>
+              <p className="text-sm text-gray-600">{project.description}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {project.type} | {project.year}
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {project.tech.map((t, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-gray-200 text-xs px-2 py-1 rounded"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

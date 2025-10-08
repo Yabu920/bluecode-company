@@ -32,8 +32,8 @@ export default function ContactPage() {
       contact: {
         title: "Get in Touch",
         phone: "+251 912464134",
-        email: "bluecode.et@gmail.com",
-        telegram: "@bluecode",
+        email: "bluecode963@gmail.com",
+        telegram: "@bluecode0",
         address: "Addis Ababa, Ethiopia",
         hours: "Mon - Fri: 9:00 AM - 6:00 PM"
       },
@@ -65,8 +65,8 @@ export default function ContactPage() {
       contact: {
         title: "ያግኙን",
         phone: "+251 912464134",
-        email: "bluecode.et@gmail.com",
-        telegram: "@bluecode",
+        email: "bluecode963@gmail.com",
+        telegram: "@bluecode0",
         address: "አዲስ አበባ፣ ኢትዮጵያ",
         hours: "ሰኞ - አርብ: 9:00 ጠዋት - 6:00 ምሽት"
       },

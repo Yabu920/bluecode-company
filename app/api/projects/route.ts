@@ -1,51 +1,59 @@
+// app/api/projects/route.ts
 import { NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
+import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const runtime = "nodejs";
 
+
 export async function GET() {
   try {
-    // Return both projects and blog posts so the frontend can fetch blog data
-    const projects = await prisma.project.findMany({ include: { comments: true }, orderBy: { createdAt: 'desc' } });
-    const posts = await prisma.blogPost.findMany({ orderBy: { createdAt: 'desc' } });
-    return NextResponse.json({ projects, posts });
+    const projects = await prisma.project.findMany({
+      include: { comments: true, techs: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // ✅ Flatten `techs` → `tech`
+    const normalized = projects.map(p => ({
+      ...p,
+      tech: p.techs.map(t => t.name),
+    }));
+
+    return NextResponse.json(normalized);
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'failed' }, { status: 500 });
   }
 }
 
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // Support creating either a project or a blog post depending on body.model
-    if (body.model === 'blog') {
-      const createdPost = await prisma.blogPost.create({ data: {
-        title: body.title,
-        excerpt: body.excerpt ?? '',
-        category: body.category ?? null,
-        date: body.date ?? null,
-        author: body.author ?? null,
-        image: body.image ?? null,
-        readTime: body.readTime ?? null
-      }});
-      return NextResponse.json(createdPost, { status: 201 });
-    }
 
-    const created = await prisma.project.create({ data: {
-      title: body.title,
-      type: body.type ?? '',
-      description: body.description ?? '',
-      category: body.category ?? null,
-      year: body.year ?? null,
-      image: body.image ?? null,
-      // `techs` is a relation (ProjectTech[]). Create relation entries for provided tech names.
-      techs: { create: (body.tech ?? []).map((name: string) => ({ name })) }
-    }});
+    const created = await prisma.project.create({
+      data: {
+        title: body.title,
+        type: body.type ?? '',
+        description: body.description ?? '',
+        category: body.category ?? null,
+        year: body.year ?? null,
+        image: body.image ?? null, // <-- URL from Cloudinary
+        techs: { create: (body.tech ?? []).map((name: string) => ({ name })) },
+      },
+    });
+
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'failed' }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
   }
 }
 
