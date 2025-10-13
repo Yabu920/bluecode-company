@@ -303,10 +303,19 @@ export default function ContactPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-8">
               {language === 'en' ? 'Find Us' : 'እኛን ያግኙ'}
             </h2>
-            <div className="bg-gray-200 h-96 rounded-lg flex items-center justify-center">
-              <p className="text-gray-600">
-                {language === 'en' ? 'Interactive Map Coming Soon' : 'በቅርቡ የሚመጣ ኢንተራክቲቭ ካርታ'}
-              </p>
+
+            {/* Google Maps iframe */}
+            <div className="h-96 w-full rounded-lg overflow-hidden shadow-md">
+              <iframe
+                title="BlueCode Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3978.123456!2d38.736!3d9.034!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x164b8b6c123456%3A0xabcdef123456!2sAddis%20Ababa%2C%20Ethiopia!5e0!3m2!1sen!2set!4v1697100000000!5m2!1sen!2set"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
             </div>
           </motion.div>
         </div>

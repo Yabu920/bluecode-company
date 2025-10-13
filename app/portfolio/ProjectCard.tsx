@@ -22,8 +22,8 @@ export default function ProjectCard({ project, index }: { project: any; index: n
               <Image
                 src={project.image}
                 alt={project.title}
-                width={500}
-                height={300}
+                width={400}
+                height={250}
                 className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (

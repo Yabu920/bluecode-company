@@ -13,6 +13,8 @@ import Image from "next/image"
 import { useLanguage } from "./contexts/language-context"
 
 
+
+
 export default function HomePage() {
   const { language, translations } = useLanguage()
   const [mounted, setMounted] = useState(false)

@@ -1,8 +1,9 @@
+
 // app/api/uploads/route.ts
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 
-// Cloudinary config
+// Cloudinary configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -22,21 +23,23 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Use 'any' here for result/error to satisfy TypeScript,
-    // since Cloudinary's types sometimes cause conflicts in Next.js routes
+    // Upload to Cloudinary via upload_stream
     const imageUrl: string = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: "projects", resource_type: "image", public_id: `${Date.now()}_${file.name}` },
         (error: any, result: any) => {
-          if (error) reject(error);
-          else resolve(result?.secure_url || "");
+          if (error) return reject(error);
+          if (!result?.secure_url) return reject(new Error("No URL returned"));
+          resolve(result.secure_url);
         }
       );
+
       stream.end(buffer);
     });
 
     return NextResponse.json({ url: imageUrl });
   } catch (err) {
+    console.error("Upload error:", err);
     return NextResponse.json({ error: "Upload failed", details: err }, { status: 500 });
   }
 }

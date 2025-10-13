@@ -265,6 +265,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import {motion} from "framer-motion";
 
 interface Project {
   title: string;
@@ -315,47 +316,61 @@ export default function PortfolioPage() {
     );
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {projects.map((project, i) => (
-          <div
-            key={i}
-            className="border rounded overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+    <div className="min-h-screen">
+      <section className="bg-gradient-to-br from-blue-50 to-white py-20">
+        <div className="container max-auto px-4 text-center">
+          <motion.div 
+          initial={{opacity: 0, y: 50}}
+          animate={{opacity: 1, y: 0}}
+          transition={{duration: 0.8}}
           >
-            {project.image ? (
-              <Image
-                src={project.image}
-                alt={project.title}
-                width={500}
-                height={300}
-                className="w-full h-48 object-cover"
-              />
-            ) : (
-              <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                No Image
-              </div>
-            )}
+            <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-800 mb-5">Projects</h1>
+            <h3 className="text-lg lg:text-2xl font-light pt-2">These Projects Made By Our Company</h3>
+          </motion.div>
+        </div>
+      </section>
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {projects.map((project, i) => (
+            <div
+              key={i}
+              className="border rounded overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+            >
+              {project.image ? (
+                <Image
+                  src={project.image}
+                  alt={project.title}
+                  width={500}
+                  height={300}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
+                  No Image
+                </div>
+              )}
 
-            <div className="p-4">
-              <h3 className="font-semibold text-lg">{project.title}</h3>
-              <p className="text-sm text-gray-600">{project.description}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {project.type} | {project.year}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {project.tech.map((t, idx) => (
-                  <span
-                    key={idx}
-                    className="bg-gray-200 text-xs px-2 py-1 rounded"
-                  >
-                    {t}
-                  </span>
-                ))}
+              <div className="p-4">
+                <h3 className="font-semibold text-lg">{project.title}</h3>
+                <p className="text-sm text-gray-600">{project.description}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {project.type} | {project.year}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {project.tech.map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-gray-200 text-xs px-2 py-1 rounded"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </section>
+          ))}
+        </div>
+      </section>
+    </div>  
   );
 }

@@ -1,24 +1,21 @@
-//app/
+
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Use environment variables for credentials
-    const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@bluecode.com";
-    const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "123456";
-
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      Cookies.set('auth', 'true', { path: '/' });
+    if (username === "admin" && password === "12345") {
+      // Save cookie
+      document.cookie = "isLoggedIn=true; path=/";
+      localStorage.setItem("isLoggedIn", "true");
       router.push("/dashboard");
     } else {
       setError("Invalid credentials");
@@ -26,34 +23,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <form
         onSubmit={handleLogin}
-        className="bg-white shadow-lg rounded-lg p-8 w-96"
+        className="bg-white p-8 rounded-2xl shadow-md w-80"
       >
-        <h1 className="text-2xl font-bold mb-4">Admin Login</h1>
-
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-
+        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <input
-          type="email"
-          placeholder="Email"
-          className="border p-2 rounded w-full mb-3"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="w-full p-2 border rounded mb-4"
         />
-
         <input
           type="password"
           placeholder="Password"
-          className="border p-2 rounded w-full mb-3"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="w-full p-2 border rounded mb-6"
         />
-
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
         >
           Login
         </button>

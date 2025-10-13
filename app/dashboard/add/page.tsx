@@ -27,26 +27,30 @@ export default function AddProjectPage() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // app/dashboard/add/page.tsx — updated handleSubmit
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
+  try {
     let imagePath: string | null = null;
     if (form.image) {
       const fd = new FormData();
       fd.append("file", form.image);
       const up = await fetch("/api/uploads", { method: "POST", body: fd });
-      if (up.ok) {
-        const jd = await up.json();
-        imagePath = jd.url;
+      if (!up.ok) {
+        const text = await up.text().catch(() => "upload failed");
+        throw new Error(`Upload failed: ${text || up.status}`);
       }
+      const jd = await up.json();
+      imagePath = jd.url;
     }
 
     const projectData = {
       title: form.title,
       type: form.type,
       description: form.description,
-      category: form.category,
-      year: form.year,
+      category: form.category || null,
+      year: form.year || null,
       tech: form.tech,
       image: imagePath,
     };
@@ -57,11 +61,28 @@ export default function AddProjectPage() {
       body: JSON.stringify(projectData),
     });
 
+    const text = await res.text(); // read body as text for debug
     if (res.ok) {
+      // Optionally parse returned created project (JSON)
+      // const created = JSON.parse(text);
       alert("✅ Project added!");
       setForm({ title: "", type: "", tech: [], description: "", image: null, category: "", year: "" });
-    } else alert("❌ Failed to add project");
-  };
+    } else {
+      // show server-provided error message (helps debugging)
+      let message = text;
+      try {
+        const data = JSON.parse(text);
+        message = data?.error || JSON.stringify(data);
+      } catch {}
+      alert("❌ Failed to add project: " + message);
+      console.error("Add project failed:", res.status, message);
+    }
+  } catch (err: any) {
+    console.error("Add project exception:", err);
+    alert("❌ Failed to add project: " + (err.message || err));
+  }
+};
+
 
   return (
     <div className="p-6 max-w-xl mx-auto">

@@ -38,24 +38,46 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    // 🧠 Normalize fields
+    const techArray =
+      Array.isArray(body.tech)
+        ? body.tech
+        : typeof body.tech === "string"
+        ? body.tech.split(",").map((t: string) => t.trim()).filter(Boolean)
+        : [];
+
+    // 🧱 Create project
     const created = await prisma.project.create({
       data: {
         title: body.title,
-        type: body.type ?? '',
-        description: body.description ?? '',
+        type: body.type ?? "",
+        description: body.description ?? "",
         category: body.category ?? null,
         year: body.year ?? null,
-        image: body.image ?? null, // <-- URL from Cloudinary
-        techs: { create: (body.tech ?? []).map((name: string) => ({ name })) },
+        image: body.image ?? null, // URL from Cloudinary
+        techs: {
+          create: techArray.map((name: string) => ({ name })),
+        },
       },
+      include: { techs: true },
     });
 
-    return NextResponse.json(created, { status: 201 });
+    // ✅ Normalize for frontend
+    const normalized = {
+      ...created,
+      tech: created.techs.map((t) => t.name),
+    };
+
+    return NextResponse.json(normalized, { status: 201 });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+    console.error("POST /api/projects error:", err);
+    return NextResponse.json(
+      { error: "Failed to create project", details: err },
+      { status: 500 }
+    );
   }
 }
+
 
 export async function PUT(req: Request) {
   try {
@@ -117,3 +139,4 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'failed' }, { status: 500 });
   }
 }
+
