@@ -1,9 +1,8 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Code, Smartphone, TrendingUp, CheckCircle, ArrowRight } from 'lucide-react'
+import { Code, Smartphone, TrendingUp, CheckCircle } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import { useLanguage } from "../contexts/language-context"
@@ -28,8 +27,8 @@ export default function ServicesPage() {
             "Payment Gateway Integration",
             "Analytics & Reporting"
           ],
-          example: "Example: Online store for Addis Fashion, with integrated payment system.",
-          image: "/webdev.jpg?height=400&width=600&text=Website+Development"
+
+          image: "/webdev.jpg"
         },
         {
           icon: Smartphone,
@@ -43,8 +42,8 @@ export default function ServicesPage() {
             "Real-time Updates",
             "App Store Optimization"
           ],
-          example: "Example: Courier booking app with tracking and notifications.",
-          image: "/appdev.jpg?height=400&width=600&text=App+Development"
+
+          image: "/appdev.jpg"
         },
         {
           icon: TrendingUp,
@@ -58,8 +57,8 @@ export default function ServicesPage() {
             "Brand Strategy",
             "Influencer Partnerships"
           ],
-          example: "Example: Grew a fashion page by 5,000 followers in 2 months.",
-          image: "/digital1.jpg?height=400&width=600&text=Digital+Marketing"
+
+          image: "/digital1.jpg"
         }
       ],
       cta: {
@@ -84,8 +83,8 @@ export default function ServicesPage() {
             "የክፍያ መግቢያ ውህደት",
             "ትንታኔ እና ሪፖርት"
           ],
-          example: "ምሳሌ: ለአዲስ ፋሽን የመስመር ላይ ሱቅ፣ ከተዋሃደ የክፍያ ስርዓት ጋር።",
-          image: "/placeholder.svg?height=400&width=600&text=Website+Development"
+
+          image: "/webdev.jpg"
         },
         {
           icon: Smartphone,
@@ -99,8 +98,8 @@ export default function ServicesPage() {
             "የእውነተኛ ጊዜ ዝመናዎች",
             "የመተግበሪያ ሱቅ ማሻሻያ"
           ],
-          example: "ምሳሌ: ከመከታተያ እና ማሳወቂያዎች ጋር የኩሪየር ቦታ ማስያዝ መተግበሪያ።",
-          image: "/placeholder.svg?height=400&width=600&text=App+Development"
+
+          image: "/appdev.jpg"
         },
         {
           icon: TrendingUp,
@@ -114,8 +113,8 @@ export default function ServicesPage() {
             "የብራንድ ስትራቴጂ",
             "የተጽዕኖ ፈጣሪ አጋርነት"
           ],
-          example: "ምሳሌ: የፋሽን ገጽን በ2 ወር ውስጥ በ5,000 ተከታዮች አሳደገ።",
-          image: "/placeholder.svg?height=400&width=600&text=Digital+Marketing"
+
+          image: "/digital1.jpg"
         }
       ],
       cta: {
@@ -129,14 +128,12 @@ export default function ServicesPage() {
   const t = content[language]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[65vh]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-white py-20">
+      <section className="bg-gradient-to-br from-blue-50 to-slate-50 py-14 sm:py-20">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
@@ -145,20 +142,17 @@ export default function ServicesPage() {
             <p className="text-xl text-gray-600">
               {t.subtitle}
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Services Sections */}
       {t.services.map((service, index) => (
-        <section key={index} className={`py-20 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+        <section key={index} id={["web", "app", "marketing"][index]} className={`py-20 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
           <div className="container mx-auto px-4">
             <div className={`grid lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
-              <motion.div
-                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
+              <div
+
                 className={index % 2 === 1 ? 'lg:col-start-2' : ''}
               >
                 <div className={`w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-6`}>
@@ -180,46 +174,34 @@ export default function ServicesPage() {
                   ))}
                 </div>
 
-                <div className="bg-blue-50 p-6 rounded-lg mb-8">
-                  <p className="text-blue-800 font-medium">
-                    {service.example}
-                  </p>
-                </div>
-
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                  {language === 'en' ? 'Learn More' : 'ተጨማሪ ይወቁ'}
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button asChild size="lg" className="mt-3 bg-blue-700 hover:bg-blue-800">
+                  <Link href="/contact#enquiry">{language === 'en' ? 'Discuss this service' : 'ስለዚህ አገልግሎት ያነጋግሩን'}</Link>
                 </Button>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: index % 2 === 0 ? 50 : -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                viewport={{ once: true }}
+              <div
+
                 className={index % 2 === 1 ? 'lg:col-start-1' : ''}
               >
                 <Image
                   src={service.image || "/placeholder.svg"}
                   alt={service.title}
                   width={600}
+                  sizes="(max-width: 1023px) 100vw, 50vw"
                   height={400}
                   className="rounded-lg shadow-2xl"
                 />
-              </motion.div>
+              </div>
             </div>
           </div>
         </section>
       ))}
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
+      <section className="py-20 bg-blue-800">
         <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
+          <div
+
             className="max-w-3xl mx-auto"
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
@@ -231,10 +213,9 @@ export default function ServicesPage() {
             <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" asChild>
               <Link href="/contact">
                 {t.cta.button}
-                <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>

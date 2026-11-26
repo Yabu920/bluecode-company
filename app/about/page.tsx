@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Lightbulb, Award, Users, Heart } from 'lucide-react'
 import Image from "next/image"
@@ -77,14 +76,12 @@ export default function AboutPage() {
   const t = content[language]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[65vh]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-white py-20">
+      <section className="bg-gradient-to-br from-blue-50 to-slate-50 py-14 sm:py-20">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
@@ -96,18 +93,15 @@ export default function AboutPage() {
             <p className="text-lg text-gray-600 leading-relaxed">
               {t.aboutText}
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Vision Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
+          <div
+
             className="text-center max-w-3xl mx-auto"
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
@@ -118,33 +112,27 @@ export default function AboutPage() {
                 "{t.vision}"
               </p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Values Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
+          <div
+
             className="text-center mb-16"
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
               {t.valuesTitle}
             </h2>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {t.values.map((value, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                viewport={{ once: true }}
+
               >
                 <Card className="h-full text-center hover:shadow-lg transition-shadow duration-300">
                   <CardContent className="p-8">
@@ -159,7 +147,7 @@ export default function AboutPage() {
                     </p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -168,11 +156,8 @@ export default function AboutPage() {
       {/* Team Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
+          <div
+
             className="text-center mb-16"
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -181,7 +166,7 @@ export default function AboutPage() {
             <p className="text-lg text-gray-600">
               {t.teamSubtitle}
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -201,12 +186,9 @@ export default function AboutPage() {
                 image: "/ante.jpg"
               }
             ].map((member, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                viewport={{ once: true }}
+
               >
                 <Card className="text-center hover:shadow-lg transition-shadow duration-300">
                   <CardContent className="p-6">
@@ -225,7 +207,7 @@ export default function AboutPage() {
                     </p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>

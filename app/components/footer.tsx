@@ -2,7 +2,8 @@
 "use client"
 
 import Link from "next/link"
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react'
+import { Mail, Phone, MapPin } from 'lucide-react'
+import { contactEmail, contactPhone, contactPhoneLabel } from "@/lib/contact-details"
 import { useLanguage } from "../contexts/language-context"
 
 export function Footer() {
@@ -21,11 +22,6 @@ export function Footer() {
             <p className="text-gray-300">
               {t.footer.description}
             </p>
-            <div className="flex space-x-4">
-              <Facebook className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Instagram className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Twitter className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -63,11 +59,11 @@ export function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-blue-400" />
-                <span className="text-gray-300">+251 912464134</span>
+                <a href={`tel:${contactPhone}`} className="text-gray-300 hover:underline">{contactPhoneLabel}</a>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-blue-400" />
-                <span className="text-gray-300">bluecode.et@gmail.com</span>
+                <a href={`mailto:${contactEmail}`} className="break-all text-gray-300 hover:underline">{contactEmail}</a>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-4 w-4 text-blue-400" />
@@ -79,7 +75,7 @@ export function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400">
-            © {new Date().getFullYear()} Yeabsra Abera {t.footer.rights}
+            © {new Date().getFullYear()} BlueCode Technology Solution. {t.footer.rights}
           </p>
         </div>
       </div>

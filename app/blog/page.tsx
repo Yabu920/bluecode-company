@@ -1,14 +1,12 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, User, ArrowRight } from 'lucide-react'
+import { Calendar, User } from 'lucide-react'
 import Image from "next/image"
-import Link from "next/link"
 import { useLanguage } from "../contexts/language-context"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 export default function BlogPage() {
   const { language } = useLanguage()
@@ -17,7 +15,7 @@ export default function BlogPage() {
     en: {
       title: "Our Blog",
       subtitle: "Latest insights on technology, business, and digital transformation",
-      categories: ["All", "Strategy", "Design", "Marketing", "News"],
+      categories: ["All", "Strategy", "Design", "Marketing", "Tech Tips", "News"],
       posts: [
         {
           title: "Why Every Ethiopian Business Needs a Website in 2025",
@@ -80,7 +78,7 @@ export default function BlogPage() {
     am: {
       title: "የእኛ ብሎግ",
       subtitle: "ስለ ቴክኖሎጂ፣ ንግድ እና ዲጂታል ለውጥ የቅርብ ጊዜ ግንዛቤዎች",
-      categories: ["ሁሉም", "ስትራቴጂ", "ዲዛይን", "ማርኬቲንግ", "ዜና"],
+      categories: ["ሁሉም", "ስትራቴጂ", "ዲዛይን", "ማርኬቲንግ", "የቴክ ምክሮች", "ዜና"],
       posts: [
         {
           title: "ለምን እያንዳንዱ የኢትዮጵያ ንግድ በ2025 ድረ-ገጽ ያስፈልገዋል",
@@ -144,33 +142,16 @@ export default function BlogPage() {
 
   const t = content[language]
 
-  const [blogPosts, setBlogPosts] = useState<any[]>([])
-
-  useEffect(() => {
-    const fetchBlogPosts = async () => {
-      try {
-        const res = await fetch('/api/projects')
-        if (!res.ok) throw new Error('Network response was not ok')
-        const data = await res.json()
-        // API returns { projects, posts }
-        setBlogPosts(data.posts ?? [])
-      } catch (error) {
-        console.error("Failed to fetch blog posts:", error);
-      }
-    }
-
-    fetchBlogPosts()
-  }, [])
+  const [activeCategory, setActiveCategory] = useState(0)
+  const posts = activeCategory === 0 ? t.posts : t.posts.filter((post) => post.category === t.categories[activeCategory])
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[65vh]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-white py-20">
+      <section className="bg-gradient-to-br from-blue-50 to-slate-50 py-14 sm:py-20">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
@@ -179,7 +160,7 @@ export default function BlogPage() {
             <p className="text-xl text-gray-600">
               {t.subtitle}
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -187,11 +168,8 @@ export default function BlogPage() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           {/* Category Filter */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
+          <div
+
             className="mb-12"
           >
             <p className="text-sm text-gray-600 mb-4">{t.filterBy}</p>
@@ -199,33 +177,32 @@ export default function BlogPage() {
               {t.categories.map((category, index) => (
                 <Button
                   key={index}
-                  variant={index === 0 ? "default" : "outline"}
+                  variant={index === activeCategory ? "default" : "outline"}
+                  aria-pressed={index === activeCategory}
+                  onClick={() => setActiveCategory(index)}
                   size="sm"
-                  className={index === 0 ? "bg-blue-600 hover:bg-blue-700" : ""}
+                  className={index === activeCategory ? "bg-blue-600 hover:bg-blue-700" : ""}
                 >
                   {category}
                 </Button>
               ))}
             </div>
-          </motion.div>
+          </div>
 
-          {/* Posts Grid */}
+          <p className="sr-only" role="status">{posts.length} {language === "en" ? "posts" : "ጽሑፎች"}</p>
+          {posts.length === 0 && <p className="text-slate-600">{language === "en" ? "No posts in this category." : "በዚህ ምድብ ጽሑፎች የሉም።"}</p>}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {(blogPosts.length ? blogPosts : t.posts).map((post: any, index: number) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
+            {posts.map((post) => (
+              <div
+                key={post.title}>
                 <Card className="h-full hover:shadow-lg transition-shadow duration-300 group">
                   <CardContent className="p-0">
                     <div className="relative overflow-hidden">
                       <Image
-                        src={post.image || "./blog1.jpg"}
-                        alt={post.title}
+                        src={post.image}
+                        alt=""
                         width={400}
+                        sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
                         height={250}
                         className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -241,74 +218,22 @@ export default function BlogPage() {
                         <User className="h-4 w-4 mr-2" />
                         <span>{post.author}</span>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
                         {post.title}
-                      </h3>
+                      </h2>
                       <p className="text-gray-600 mb-4 text-sm leading-relaxed">
                         {post.excerpt}
                       </p>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">{post.readTime}</span>
-                        <Link 
-                          href={`/blog/${index + 1}`}
-                          className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
-                        >
-                          {t.readMore}
-                          <ArrowRight className="h-4 w-4 ml-1" />
-                        </Link>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          {/* Load More Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mt-12"
-          >
-            <Button size="lg" variant="outline">
-              {language === 'en' ? 'Load More Posts' : 'ተጨማሪ ፖስቶች ይጫኑ'}
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center max-w-2xl mx-auto"
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              {language === 'en' ? 'Stay Updated' : 'ዝማኔ ይቆዩ'}
-            </h2>
-            <p className="text-gray-600 mb-8">
-              {language === 'en' 
-                ? 'Subscribe to our newsletter and get the latest insights delivered to your inbox.'
-                : 'ለዜና መልእክታችን ይመዝገቡ እና የቅርብ ጊዜ ግንዛቤዎችን በኢሜልዎ ይቀበሉ።'
-              }
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder={language === 'en' ? 'Enter your email' : 'ኢሜልዎን ያስገቡ'}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-              <Button className="bg-blue-600 hover:bg-blue-700 px-8">
-                {language === 'en' ? 'Subscribe' : 'ይመዝገቡ'}
-              </Button>
-            </div>
-          </motion.div>
         </div>
       </section>
     </div>

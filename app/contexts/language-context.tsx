@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 
 type Language = 'en' | 'am'
 
@@ -203,7 +203,21 @@ const translations = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('en')
+  const [language, updateLanguage] = useState<Language>('en')
+
+  useEffect(() => {
+    const saved = localStorage.getItem("bluecode-language")
+    if (saved === "am" || saved === "en") updateLanguage(saved)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.lang = language
+  }, [language])
+
+  function setLanguage(nextLanguage: Language) {
+    updateLanguage(nextLanguage)
+    localStorage.setItem("bluecode-language", nextLanguage)
+  }
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, translations }}>

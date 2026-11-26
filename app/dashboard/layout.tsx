@@ -1,70 +1,31 @@
+import type { Metadata } from "next"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth, signOut } from "@/lib/auth"
 
-"use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import Script from "next/script";
+export const dynamic = "force-dynamic"
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
+export const metadata: Metadata = { title: "Admin dashboard", robots: { index: false, follow: false } }
 
-  const handleLogout = () => {
-    localStorage.removeItem("auth");
-    router.push("/login");
-  };
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  if (!process.env.AUTH_SECRET || !(await auth())?.user) redirect("/login")
 
   return (
-    <>
-      {/* Google Analytics 4 */}
-      <Script
-        strategy="afterInteractive"
-        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.GA4_PROPERTY_ID}`}
-      />
-      <Script
-        id="ga4-init"
-        strategy="afterInteractive"
-      >
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${process.env.GA4_PROPERTY_ID}', { send_page_view: true });
-        `}
-      </Script>
-
-      {/* Sidebar + Main Layout */}
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <aside className="w-64 bg-gray-800 text-white flex flex-col p-4">
-          <h2 className="text-xl font-bold mb-6">Admin Panel</h2>
-          <nav className="flex-1">
-            <ul className="space-y-3">
-              <li>
-                <Link href="/dashboard" className="hover:underline">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard/add" className="hover:underline">
-                  Add Project
-                </Link>
-              </li>
-            </ul>
-          </nav>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 px-3 py-2 rounded mt-auto"
-          >
-            Logout
-          </button>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 bg-gray-50 p-6 overflow-y-auto">{children}</main>
-      </div>
-    </>
-  );
+    <div className="min-h-[70vh] bg-slate-50">
+      <nav aria-label="Administration" className="border-b bg-slate-950 text-white">
+        <div className="container mx-auto flex flex-wrap items-center gap-5 px-4 py-4">
+          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/dashboard/add">Add project</Link>
+          <Link href="/dashboard/messages">Messages</Link>
+          <form className="ml-auto" action={async () => {
+            "use server"
+            await signOut({ redirectTo: "/login" })
+          }}>
+            <button className="rounded-md border border-slate-500 px-4 py-2">Sign out</button>
+          </form>
+        </div>
+      </nav>
+      <div className="container mx-auto px-4 py-8">{children}</div>
+    </div>
+  )
 }

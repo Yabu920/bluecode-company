@@ -1,214 +1,99 @@
+"use client"
 
-"use client";
-
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { gtagPageView, gtagEvent } from "@/lib/ga";
-
-interface Project {
-  _id?: string;
-  id?: string;
-  title: string;
-  type: string;
-  tech: string[];
-  description: string;
-  category?: string;
-  year?: string;
-  image?: string | null;
-}
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import type { PublicProject } from "../portfolio/portfolio-view"
+import ProjectForm, { apiResponse } from "./project-form"
 
 export default function DashboardPage() {
-  const pathname = usePathname();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Project | null>(null);
-  const [formData, setFormData] = useState<Partial<Project> & { newImageFile?: File | null }>({});
+  const [projects, setProjects] = useState<PublicProject[]>([])
+  const [page, setPage] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [refresh, setRefresh] = useState(0)
+  const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
+  const [editing, setEditing] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
-  // Track page view
   useEffect(() => {
-    gtagPageView(pathname);
-  }, [pathname]);
-
-  // Load projects
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+    const abort = new AbortController()
+    async function load() {
+      setLoading(true)
+      setError("")
       try {
-        const res = await fetch("/api/projects", { cache: "no-store" });
-        const data = await res.json();
-        const list: Project[] = Array.isArray(data) ? data : data.projects || [];
-        setProjects(list);
-      } catch (err) {
-        console.error("Failed to load projects:", err);
+        const response = await fetch(`/api/projects?page=${page}`, { cache: "no-store", signal: abort.signal })
+        const records = await apiResponse<PublicProject[]>(response)
+        if (!abort.signal.aborted) {
+          setProjects(records)
+          setHasNext(response.headers.get("X-Has-Next-Page") === "true")
+        }
+      } catch (caught) {
+        if (!abort.signal.aborted) setError(caught instanceof Error ? caught.message : "Could not load projects.")
       } finally {
-        setLoading(false);
+        if (!abort.signal.aborted) setLoading(false)
       }
-    };
-    load();
-  }, []);
+    }
+    void load()
+    return () => abort.abort()
+  }, [page, refresh])
 
-  const getId = (p: Project) => p._id ?? p.id ?? "";
-
-  // ---------- DELETE ----------
-  const handleDelete = async (project: Project) => {
-    const id = getId(project);
-    if (!id) return;
-    if (!confirm(`Delete "${project.title}"? This cannot be undone.`)) return;
-
+  async function remove(project: PublicProject) {
+    if (deleting || !window.confirm(`Delete “${project.title}” and its comments?`)) return
+    setDeleting(project.id)
+    setError("")
+    setNotice("")
     try {
-      const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete request failed");
-
-      setProjects((prev) => prev.filter((p) => getId(p) !== id));
-
-      // Track GA4 event
-      gtagEvent({ action: "delete_project", category: "dashboard", label: project.title });
-
-      // Add to live panel
-      addEventToPanel("delete_project", "dashboard", project.title);
-    } catch (err) {
-      console.error("Failed to delete project:", err);
-      alert("Failed to delete project.");
+      await apiResponse(await fetch(`/api/projects/${encodeURIComponent(project.id)}`, { method: "DELETE" }))
+      setNotice("Project deleted.")
+      if (projects.length === 1 && page > 1) setPage(page - 1)
+      else setRefresh((value) => value + 1)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not delete the project.")
+    } finally {
+      setDeleting(null)
     }
-  };
-
-  // ---------- EDIT ----------
-  const handleEdit = (project: Project) => {
-    setEditing(project);
-    setFormData({ ...project, newImageFile: undefined });
-  };
-
-  // ---------- UPDATE ----------
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editing) return;
-    const id = getId(editing);
-    if (!id) return;
-
-    try {
-      const fd = new FormData();
-      fd.append("title", formData.title ?? "");
-      fd.append("description", formData.description ?? "");
-      fd.append("type", formData.type ?? "");
-      fd.append("year", formData.year ?? "");
-      fd.append("category", formData.category ?? "");
-      fd.append("tech", (formData.tech ?? []).join(","));
-
-      if (formData.newImageFile instanceof File) {
-        fd.append("file", formData.newImageFile);
-      } else if (formData.image) {
-        fd.append("imageUrl", formData.image as string);
-      }
-
-      const res = await fetch(`/api/projects/${id}`, { method: "PUT", body: fd });
-      if (!res.ok) throw new Error("Update request failed");
-
-      const updated = await res.json();
-      const normalized = { ...updated, _id: (updated as any).id ?? (updated as any)._id };
-
-      setProjects((prev) => prev.map((p) => (getId(p) === (normalized._id ?? normalized.id) ? normalized : p)));
-      setEditing(null);
-      setFormData({});
-
-      // Track GA4 event
-      gtagEvent({ action: "edit_project", category: "dashboard", label: normalized.title });
-      addEventToPanel("edit_project", "dashboard", normalized.title);
-
-      alert("Project updated");
-    } catch (err) {
-      console.error("Failed to update project:", err);
-      alert("Failed to update project.");
-    }
-  };
-
-  const previewUrl = formData.newImageFile ? URL.createObjectURL(formData.newImageFile) : undefined;
-
-  // ---------- LIVE PANEL HELPER ----------
-  const addEventToPanel = (action: string, category: string, label?: string) => {
-    const list = document.getElementById("ga-events-list");
-    if (list) {
-      const li = document.createElement("li");
-      li.textContent = `${action} | ${category} | ${label ?? "-"}`;
-      list.prepend(li);
-    }
-  };
+  }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-
-      {loading ? (
-        <p>Loading projects...</p>
-      ) : projects.length === 0 ? (
-        <p>No projects yet. Go to Add Project to start.</p>
-      ) : (
-        <div className="grid gap-4">
-          {projects.map((project) => (
-            <div key={getId(project) || Math.random()} className="p-4 border rounded bg-white shadow-sm">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-medium">{project.title}</h3>
-                <div className="space-x-2">
-                  <button onClick={() => handleEdit(project)} className="text-sm px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Edit</button>
-                  <button onClick={() => handleDelete(project)} className="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
-                </div>
-              </div>
-
-              {project.image && (
-                <img src={project.image} alt={project.title} className="mb-2 w-full max-w-xs h-40 object-cover rounded" />
-              )}
-
-              <p className="text-sm text-gray-600">{project.description}</p>
-              <p className="text-xs text-gray-500">{project.type} | {project.year}</p>
-              <p className="text-xs text-gray-500">Tech: {Array.isArray(project.tech) ? project.tech.join(", ") : (project as any).techs?.map((t: any) => t.name).join(", ")}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {editing && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <form onSubmit={handleUpdate} className="bg-white p-6 rounded shadow-lg w-96">
-            <h2 className="text-xl font-semibold mb-4">Edit Project</h2>
-            {previewUrl ? (
-              <img src={previewUrl} alt="Preview" className="mb-3 w-full h-40 object-cover rounded" />
-            ) : (
-              editing.image && <img src={editing.image} alt="Current" className="mb-3 w-full h-40 object-cover rounded" />
-            )}
-
-            <label className="block text-sm mb-1">Change image</label>
-            <input type="file" accept="image/*" className="border p-2 w-full mb-2 rounded"
-              onChange={(e) => setFormData({ ...formData, newImageFile: e.target.files?.[0] ?? null })} />
-
-            <input type="text" placeholder="Title" className="border p-2 w-full mb-2 rounded"
-              value={formData.title ?? editing.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-
-            <textarea placeholder="Description" className="border p-2 w-full mb-2 rounded"
-              value={formData.description ?? editing.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-
-            <input type="text" placeholder="Type" className="border p-2 w-full mb-2 rounded"
-              value={formData.type ?? editing.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} />
-
-            <input type="text" placeholder="Year" className="border p-2 w-full mb-2 rounded"
-              value={formData.year ?? editing.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} />
-
-            <input type="text" placeholder="Tech (comma separated)" className="border p-2 w-full mb-4 rounded"
-              value={formData.tech?.join(", ") ?? (editing.tech ? (editing.tech as string[]).join(", ") : "")}
-              onChange={(e) => setFormData({ ...formData, tech: e.target.value.split(",").map((t) => t.trim()) })} />
-
-            <div className="flex justify-end space-x-2">
-              <button type="button" onClick={() => { setEditing(null); setFormData({}); }} className="px-3 py-1 rounded bg-gray-300">Cancel</button>
-              <button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white">Save</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* LIVE GA EVENTS PANEL */}
-      <div className="fixed bottom-4 right-4 p-3 bg-white shadow rounded w-80 max-h-60 overflow-auto text-sm z-50">
-        <h4 className="font-bold mb-2">Analytics Events (Live)</h4>
-        <ul id="ga-events-list" className="space-y-1"></ul>
+    <section className="mx-auto max-w-5xl">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold">Manage projects</h1>
+        <Button asChild><Link href="/dashboard/add">Add project</Link></Button>
       </div>
-    </div>
-  );
+      <p role="status" className="text-green-800">{loading ? "Loading projects…" : notice}</p>
+      <p role="alert" className="text-red-700">{error}</p>
+      {!loading && !error && projects.length === 0 && <p>No projects on this page.</p>}
+      {!loading && <ul className="grid gap-4">
+        {projects.map((project) => (
+          <li key={project.id} className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="min-w-0 break-words text-lg font-bold">{project.title}</h2>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditing(project.id)} aria-label={`Edit ${project.title}`}>Edit</Button>
+                <Button variant="destructive" disabled={deleting !== null} onClick={() => void remove(project)} aria-label={`Delete ${project.title}`}>
+                  {deleting === project.id ? "Deleting…" : "Delete"}
+                </Button>
+              </div>
+            </div>
+            {editing === project.id ? (
+              <div className="mt-4">
+                <ProjectForm project={project} onCancel={() => setEditing(null)} onSave={(updated) => {
+                  setProjects((records) => records.map((record) => record.id === updated.id ? updated : record))
+                  setEditing(null)
+                  setNotice("Project updated.")
+                }} />
+              </div>
+            ) : <p className="mt-2 break-words text-slate-600">{project.description}</p>}
+          </li>
+        ))}
+      </ul>}
+      {(page > 1 || hasNext) && <nav aria-label="Project pages" className="mt-6 flex items-center gap-3">
+        <Button variant="outline" disabled={page <= 1 || loading || !!deleting} onClick={() => { setEditing(null); setPage(page - 1) }}>Previous</Button>
+        <span>Page {page}</span>
+        <Button variant="outline" disabled={!hasNext || loading || !!deleting} onClick={() => { setEditing(null); setPage(page + 1) }}>Next</Button>
+      </nav>}
+    </section>
+  )
 }

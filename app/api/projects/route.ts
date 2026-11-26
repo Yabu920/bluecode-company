@@ -1,142 +1,80 @@
-// app/api/projects/route.ts
-import { NextResponse } from "next/server";
-import prisma from "../../../lib/prisma";
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
+import { revalidateTag } from "next/cache"
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import prisma from "@/lib/prisma"
+import { deleteProject, formatProject, listProjects } from "@/lib/project-data"
+import { blogFields, projectFields, recordId } from "@/lib/project-input"
+import { errorResponse, readJson, requireAdmin } from "@/lib/requests"
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const updates = z.union([
+  blogFields.partial().extend({ id: recordId, model: z.literal("blog") }),
+  projectFields.partial().extend({ id: recordId, model: z.literal("project").optional() }),
+])
 
-export const runtime = "nodejs";
-
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const projects = await prisma.project.findMany({
-      include: { comments: true, techs: true },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // ✅ Flatten `techs` → `tech`
-    const normalized = projects.map(p => ({
-      ...p,
-      tech: p.techs.map(t => t.name),
-    }));
-
-    return NextResponse.json(normalized);
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'failed' }, { status: 500 });
+    const page = z.coerce.number().int().min(1).max(10_000).parse(new URL(request.url).searchParams.get("page") ?? 1)
+    const { projects, hasNext } = await listProjects(page)
+    return NextResponse.json(projects, { headers: { "X-Has-Next-Page": String(hasNext) } })
+  } catch (error) {
+    return errorResponse(error, "Project listing failed")
   }
 }
 
-
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json();
-
-    // 🧠 Normalize fields
-    const techArray =
-      Array.isArray(body.tech)
-        ? body.tech
-        : typeof body.tech === "string"
-        ? body.tech.split(",").map((t: string) => t.trim()).filter(Boolean)
-        : [];
-
-    // 🧱 Create project
-    const created = await prisma.project.create({
-      data: {
-        title: body.title,
-        type: body.type ?? "",
-        description: body.description ?? "",
-        category: body.category ?? null,
-        year: body.year ?? null,
-        image: body.image ?? null, // URL from Cloudinary
-        techs: {
-          create: techArray.map((name: string) => ({ name })),
-        },
-      },
+    await requireAdmin(request)
+    const { tech, ...fields } = await readJson(request, projectFields.extend({
+      type: projectFields.shape.type.default(""),
+      description: projectFields.shape.description.default(""),
+      category: projectFields.shape.category.optional(),
+      year: projectFields.shape.year.optional(),
+      image: projectFields.shape.image.optional(),
+      tech: projectFields.shape.tech.default([]),
+    }))
+    const project = await prisma.project.create({
+      data: { ...fields, techs: { create: tech.map((name) => ({ name })) } },
       include: { techs: true },
-    });
-
-    // ✅ Normalize for frontend
-    const normalized = {
-      ...created,
-      tech: created.techs.map((t) => t.name),
-    };
-
-    return NextResponse.json(normalized, { status: 201 });
-  } catch (err) {
-    console.error("POST /api/projects error:", err);
-    return NextResponse.json(
-      { error: "Failed to create project", details: err },
-      { status: 500 }
-    );
+    })
+    revalidateTag("portfolio-projects", { expire: 0 })
+    return NextResponse.json(formatProject(project), { status: 201 })
+  } catch (error) {
+    return errorResponse(error, "Project creation failed")
   }
 }
 
-
-export async function PUT(req: Request) {
+export async function PUT(request: Request) {
   try {
-    const body = await req.json();
-    if (!body.id) return NextResponse.json({ error: 'missing id' }, { status: 400 });
-    if (body.model === 'blog') {
-      const updatedPost = await prisma.blogPost.update({ where: { id: body.id }, data: {
-        title: body.title,
-        excerpt: body.excerpt,
-        category: body.category,
-        date: body.date,
-        author: body.author,
-        image: body.image,
-        readTime: body.readTime
-      }});
-      return NextResponse.json(updatedPost);
+    await requireAdmin(request)
+    const data = await readJson(request, updates)
+    if (data.model === "blog") {
+      const { id, model, ...fields } = data
+      return NextResponse.json(await prisma.blogPost.update({ where: { id }, data: fields }))
     }
 
-    // For updates, replace techs if a new array is provided.
-    const projectData: any = {
-      title: body.title,
-      type: body.type,
-      description: body.description,
-      category: body.category,
-      year: body.year,
-      image: body.image,
-    }
-
-    if (Array.isArray(body.tech)) {
-      projectData.techs = {
-        // remove existing relation entries and create new ones
-        deleteMany: {},
-        create: body.tech.map((name: string) => ({ name }))
-      }
-    }
-
-    const updated = await prisma.project.update({ where: { id: body.id }, data: projectData });
-    return NextResponse.json(updated);
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'failed' }, { status: 500 });
+    const { id, model, tech, ...fields } = data
+    const project = await prisma.project.update({
+      where: { id },
+      data: { ...fields, techs: tech ? { deleteMany: {}, create: tech.map((name) => ({ name })) } : undefined },
+      include: { techs: true },
+    })
+    revalidateTag("portfolio-projects", { expire: 0 })
+    return NextResponse.json(formatProject(project))
+  } catch (error) {
+    return errorResponse(error, "Project update failed")
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 });
-    const model = searchParams.get('model');
-    if (model === 'blog') {
-      await prisma.blogPost.delete({ where: { id } });
-    } else {
-      await prisma.project.delete({ where: { id } });
-    }
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'failed' }, { status: 500 });
+    await requireAdmin(request)
+    const params = new URL(request.url).searchParams
+    const id = recordId.parse(params.get("id"))
+    if (params.get("model") === "blog") await prisma.blogPost.delete({ where: { id } })
+    else await deleteProject(id)
+    revalidateTag("portfolio-projects", { expire: 0 })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    return errorResponse(error, "Project deletion failed")
   }
 }
-

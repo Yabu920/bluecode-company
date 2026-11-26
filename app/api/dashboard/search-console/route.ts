@@ -1,33 +1,11 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server"
+import { errorResponse, requireAdmin } from "@/lib/requests"
 
-async function fetchSearchConsoleData() {
-  const svcJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || ''
-  if (!svcJson) {
-    return {
-      summary: { clicks: 456, impressions: 7890, ctr: 0.057, position: 12.4 },
-      topQueries: [
-        { query: 'blue code', clicks: 120, impressions: 2000, ctr: 0.06 },
-        { query: 'yabu services', clicks: 80, impressions: 900, ctr: 0.088 }
-      ]
-    }
-  }
-
+export async function GET(request: Request) {
   try {
-    // Implementing real OAuth flow + API calls requires signing JWTs. Return sample data.
-    return {
-      summary: { clicks: 456, impressions: 7890, ctr: 0.057, position: 12.4 },
-      topQueries: [
-        { query: 'blue code', clicks: 120, impressions: 2000, ctr: 0.06 },
-        { query: 'yabu services', clicks: 80, impressions: 900, ctr: 0.088 }
-      ]
-    }
-  } catch (err) {
-    return NextResponse.json({ error: 'failed to fetch search console data', details: String(err) }, { status: 500 })
+    await requireAdmin(request)
+    return NextResponse.json({ status: "not_configured" }, { headers: { "Cache-Control": "no-store" } })
+  } catch (error) {
+    return errorResponse(error, "Analytics status failed")
   }
-}
-
-export async function GET(req: NextRequest) {
-  const data = await fetchSearchConsoleData()
-  return NextResponse.json(data)
 }
