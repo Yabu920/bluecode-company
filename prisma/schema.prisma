@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,35 +8,43 @@ datasource db {
 }
 
 model Project {
-  id          String         @id @default(cuid())
+  id          String        @id @default(cuid())
   title       String
   type        String
-  description String
+  description String        @db.Text
   category    String?
   year        String?
-  image       String?
-  techs       ProjectTech[]  // relation handled from ProjectTech side
-  comments    Comment[]      // relation handled from Comment side
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  image       String?       @db.VarChar(2048)
+  techs       ProjectTech[] // relation handled from ProjectTech side
+  comments    Comment[] // relation handled from Comment side
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([createdAt, id])
 }
 
 model Comment {
   id        String   @id @default(cuid())
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
   name      String
   email     String
-  body      String
+  body      String   @db.Text
   createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
 }
 
 model ContactMessage {
   id        String   @id @default(cuid())
   name      String
   email     String
-  message   String
+  message   String   @db.Text
+  phone     String?
+  subject   String?
   createdAt DateTime @default(now())
+
+  @@index([createdAt, id])
 }
 
 model BlogPost {
@@ -54,8 +61,16 @@ model BlogPost {
 }
 
 model ProjectTech {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   name      String
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+}
+
+model RateLimit {
+  id        String   @id @db.Char(64)
+  count     Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }

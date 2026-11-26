@@ -1,46 +1,49 @@
-import { NextResponse } from 'next/server'
-import prisma from '../../../lib/prisma'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import prisma from "@/lib/prisma"
+import { recordId } from "@/lib/project-input"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { errorResponse, readJson, requireAdmin, verifyOrigin } from "@/lib/requests"
 
-export const runtime = 'nodejs'
+const fields = z.object({
+  projectId: recordId,
+  name: z.string().trim().min(1).max(80),
+  email: z.string().trim().email().max(191),
+  body: z.string().trim().min(1).max(2_000),
+})
+const publicFields = { id: true, projectId: true, name: true, body: true, createdAt: true } as const
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const projectId = searchParams.get('projectId')
-    const where = projectId ? { where: { projectId }, orderBy: { createdAt: 'desc' } } : { orderBy: { createdAt: 'desc' } }
-    const comments = projectId ? await prisma.comment.findMany({ where: { projectId }, orderBy: { createdAt: 'desc' } }) : await prisma.comment.findMany({ orderBy: { createdAt: 'desc' } })
+    const projectId = recordId.parse(new URL(request.url).searchParams.get("projectId"))
+    const comments = await prisma.comment.findMany({
+      where: { projectId }, select: publicFields, orderBy: { createdAt: "desc" }, take: 50,
+    })
     return NextResponse.json(comments)
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json({ error: 'failed' }, { status: 500 })
+  } catch (error) {
+    return errorResponse(error, "Comment listing failed")
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const created = await prisma.comment.create({ data: {
-      projectId: body.projectId,
-      name: body.name,
-      email: body.email,
-      body: body.body,
-    } })
-    return NextResponse.json(created, { status: 201 })
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json({ error: 'failed' }, { status: 500 })
+    verifyOrigin(request)
+    const data = await readJson(request, fields)
+    await enforceRateLimit(request, "comment", 10)
+    const comment = await prisma.comment.create({ data, select: publicFields })
+    return NextResponse.json(comment, { status: 201 })
+  } catch (error) {
+    return errorResponse(error, "Comment creation failed")
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 })
+    await requireAdmin(request)
+    const id = recordId.parse(new URL(request.url).searchParams.get("id"))
     await prisma.comment.delete({ where: { id } })
     return NextResponse.json({ ok: true })
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json({ error: 'failed' }, { status: 500 })
+  } catch (error) {
+    return errorResponse(error, "Comment deletion failed")
   }
 }

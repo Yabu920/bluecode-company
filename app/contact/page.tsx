@@ -1,6 +1,8 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useRef, useState, type FormEvent } from "react"
+import Link from "next/link"
+import { contactEmail, contactPhone, contactPhoneLabel, telegramHandle } from "@/lib/contact-details"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,16 +33,14 @@ export default function ContactPage() {
       },
       contact: {
         title: "Get in Touch",
-        phone: "+251 912464134",
-        email: "bluecode963@gmail.com",
-        telegram: "@bluecode0",
+
         address: "Addis Ababa, Ethiopia",
         hours: "Mon - Fri: 9:00 AM - 6:00 PM"
       },
       services: {
         title: "Our Services",
         web: "Website Development",
-        app: "Mobile App Development", 
+        app: "Mobile App Development",
         marketing: "Digital Marketing",
         consultation: "Free Consultation"
       }
@@ -64,9 +64,7 @@ export default function ContactPage() {
       },
       contact: {
         title: "ያግኙን",
-        phone: "+251 912464134",
-        email: "bluecode963@gmail.com",
-        telegram: "@bluecode0",
+
         address: "አዲስ አበባ፣ ኢትዮጵያ",
         hours: "ሰኞ - አርብ: 9:00 ጠዋት - 6:00 ምሽት"
       },
@@ -81,16 +79,42 @@ export default function ContactPage() {
   }
 
   const t = content[language]
+  const en = language === "en"
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error" | "limited">("idle")
+  const submitting = useRef(false)
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (submitting.current) return
+    const form = event.currentTarget
+    submitting.current = true
+    setStatus("sending")
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      })
+      if (response.ok) {
+        setStatus("sent")
+        form.reset()
+      } else {
+        setStatus(response.status === 429 ? "limited" : "error")
+      }
+    } catch {
+      setStatus("error")
+    } finally {
+      submitting.current = false
+    }
+  }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[65vh]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-white py-20">
+      <section className="bg-gradient-to-br from-blue-50 to-slate-50 py-14 sm:py-20">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
@@ -102,7 +126,7 @@ export default function ContactPage() {
             <p className="text-lg text-gray-600">
               {t.headerText}
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -111,83 +135,66 @@ export default function ContactPage() {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
+            <div
+
             >
               <Card>
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">
                     {language === 'en' ? 'Send us a Message' : 'መልእክት ይላኩልን'}
                   </h2>
-                  <form className="space-y-6" onSubmit={async (e) => {
-                    e.preventDefault()
-                    const formEl = e.currentTarget as HTMLFormElement
-                    const fd = new FormData(formEl)
-                    const payload: any = {
-                      name: fd.get('name'),
-                      phone: fd.get('phone'),
-                      email: fd.get('email'),
-                      subject: fd.get('subject'),
-                      message: fd.get('message')
-                    }
-                    const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                    if (res.ok) alert('✅ Message sent!')
-                    else alert('❌ Failed to send message')
-                    formEl.reset()
-                  }}>
+                  <form id="enquiry" className="space-y-5" onSubmit={submit}>
+                    <div hidden aria-hidden="true">
+                      <label htmlFor="website">Website</label>
+                      <input id="website" name="website" autoComplete="off" tabIndex={-1} />
+                    </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t.form.name}
+                        <label htmlFor="contact-name" className="block text-sm font-medium text-gray-700 mb-2">{t.form.name}
                         </label>
-                        <Input name="name" placeholder={t.form.namePlaceholder} />
+                        <Input id="contact-name" name="name" required minLength={2} maxLength={80} autoComplete="name" placeholder={t.form.namePlaceholder} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t.form.phone}
+                        <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-2">{t.form.phone}
                         </label>
-                        <Input name="phone" placeholder={t.form.phonePlaceholder} />
+                        <Input id="contact-phone" name="phone" type="tel" maxLength={50} autoComplete="tel" placeholder={t.form.phonePlaceholder} />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t.form.email}
+                      <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-2">{t.form.email}
                       </label>
-                      <Input name="email" type="email" placeholder={t.form.emailPlaceholder} />
+                      <Input id="contact-email" name="email" type="email" required maxLength={191} autoComplete="email" placeholder={t.form.emailPlaceholder} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t.form.subject}
+                      <label htmlFor="contact-subject" className="block text-sm font-medium text-gray-700 mb-2">{t.form.subject}
                       </label>
-                      <Input name="subject" placeholder={t.form.subjectPlaceholder} />
+                      <Input id="contact-subject" name="subject" maxLength={160} placeholder={t.form.subjectPlaceholder} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t.form.message}
+                      <label htmlFor="contact-message" className="block text-sm font-medium text-gray-700 mb-2">{t.form.message}
                       </label>
-                      <Textarea name="message" 
-                        rows={6} 
+                      <Textarea id="contact-message" name="message" required minLength={10} maxLength={4000}
+                        rows={6}
                         placeholder={t.form.messagePlaceholder}
                       />
                     </div>
-                    <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
-                      <Send className="h-5 w-5 mr-2" />
-                      {t.form.send}
+                    <Button size="lg" type="submit" disabled={status === "sending"} className="w-full bg-blue-700 hover:bg-blue-800">
+                      <Send aria-hidden="true" className="h-5 w-5 mr-2" />
+                      {status === "sending" ? (en ? "Sending…" : "በመላክ ላይ…") : t.form.send}
                     </Button>
+                    <div aria-live="polite" className={status === "sent" ? "text-green-800" : "text-red-700"}>
+                      {status === "sent" && (en ? "We received your message." : "መልእክትዎ ደርሶናል።")}
+                      {status === "limited" && (en ? "Too many requests. Please try again in 15 minutes." : "ብዙ ሙከራዎች ነበሩ። ከ15 ደቂቃ በኋላ ይሞክሩ።")}
+                      {status === "error" && (en ? "We couldn’t send your message. Try again or contact us by phone or email." : "መልእክትዎ አልተላከም። ደግመው ይሞክሩ ወይም በስልክ ወይም በኢሜል ያግኙን።")}
+                    </div>
                   </form>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Contact Information */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
+            <div
+
               className="space-y-8"
             >
               <div>
@@ -203,7 +210,7 @@ export default function ContactPage() {
                       <p className="font-medium text-gray-900">
                         {language === 'en' ? 'Phone' : 'ስልክ'}
                       </p>
-                      <p className="text-gray-600">{t.contact.phone}</p>
+                      <a className="text-blue-800 underline underline-offset-4" href={`tel:${contactPhone}`}>{contactPhoneLabel}</a>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -214,7 +221,7 @@ export default function ContactPage() {
                       <p className="font-medium text-gray-900">
                         {language === 'en' ? 'Email' : 'ኢሜል'}
                       </p>
-                      <p className="text-gray-600">{t.contact.email}</p>
+                      <a className="break-all text-blue-800 underline underline-offset-4" href={`mailto:${contactEmail}`}>{contactEmail}</a>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -223,7 +230,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">Telegram</p>
-                      <p className="text-gray-600">{t.contact.telegram}</p>
+                      <a className="text-blue-800 underline underline-offset-4" href={`https://t.me/${telegramHandle}`}>@{telegramHandle}</a>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -251,73 +258,11 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* Services Quick Links */}
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {t.services.title}
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-700">{t.services.web}</span>
-                      <Button size="sm" variant="ghost">
-                        {language === 'en' ? 'Learn More' : 'ተጨማሪ'}
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-700">{t.services.app}</span>
-                      <Button size="sm" variant="ghost">
-                        {language === 'en' ? 'Learn More' : 'ተጨማሪ'}
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-700">{t.services.marketing}</span>
-                      <Button size="sm" variant="ghost">
-                        {language === 'en' ? 'Learn More' : 'ተጨማሪ'}
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <span className="text-blue-700 font-medium">{t.services.consultation}</span>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                        {language === 'en' ? 'Book Now' : 'አሁን ይያዙ'}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Map Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">
-              {language === 'en' ? 'Find Us' : 'እኛን ያግኙ'}
-            </h2>
-
-            {/* Google Maps iframe */}
-            <div className="h-96 w-full rounded-lg overflow-hidden shadow-md">
-              <iframe
-                title="BlueCode Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3978.123456!2d38.736!3d9.034!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x164b8b6c123456%3A0xabcdef123456!2sAddis%20Ababa%2C%20Ethiopia!5e0!3m2!1sen!2set!4v1697100000000!5m2!1sen!2set"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
+              <Link href="/services" className="inline-block font-semibold text-blue-800 underline underline-offset-4">
+                {t.services.title}
+              </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>

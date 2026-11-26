@@ -1,17 +1,19 @@
-// server.js
-import { createServer } from 'http';
-import { parse } from 'url';
-import next from 'next';
+const { createServer } = require("node:http")
+const next = require("next")
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
-const handle = app.getRequestHandler();
+const dir = __dirname
+const app = next({ dev: false, dir })
+const handle = app.getRequestHandler()
 
 app.prepare().then(() => {
-  createServer((req, res) => {
-    const parsedUrl = parse(req.url, true);
-    handle(req, res, parsedUrl);
-  }).listen(process.env.PORT || 3000, () => {
-    console.log('✅ Server running on port ' + (process.env.PORT || 3000));
-  });
-});
+  const server = createServer((request, response) => {
+    void handle(request, response).catch(() => {
+      if (!response.headersSent) response.statusCode = 500
+      if (!response.writableEnded) response.end()
+    })
+  })
+  server.listen(process.env.PORT || 3000)
+}).catch((error) => {
+  console.error("BlueCode startup failed", error)
+  process.exitCode = 1
+})

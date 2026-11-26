@@ -1,25 +1,38 @@
-// lib/auth.ts
-export const ADMIN_CREDENTIALS = {
-  username: "yeab920@gmail.com",
-  password: "Yeab920@.com",
-};
+import { createHash, timingSafeEqual } from "node:crypto"
+import NextAuth from "next-auth"
+import Credentials from "next-auth/providers/credentials"
+import { z } from "zod"
+import { getSiteUrl } from "@/lib/site"
 
-export function isAuthenticated() {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem("isLoggedIn") === "true";
+const credentialsSchema = z.object({
+  email: z.string().trim().email().max(191),
+  password: z.string().min(16).max(256),
+})
+
+function matchesSecret(value: string, expected: string) {
+  const hash = (input: string) => createHash("sha256").update(input).digest()
+  return timingSafeEqual(hash(value), hash(expected))
 }
 
-export function login(username: string, password: string): boolean {
-  if (
-    username === ADMIN_CREDENTIALS.username &&
-    password === ADMIN_CREDENTIALS.password
-  ) {
-    localStorage.setItem("isLoggedIn", "true");
-    return true;
-  }
-  return false;
-}
+export const { auth, handlers, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
+  useSecureCookies: getSiteUrl().protocol === "https:",
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
+  providers: [
+    Credentials({
+      credentials: { email: { type: "email" }, password: { type: "password" } },
+      authorize(credentials) {
+        const input = credentialsSchema.safeParse(credentials)
+        const email = process.env.ADMIN_EMAIL
+        const password = process.env.ADMIN_PASSWORD
+        if (!input.success || !email || !password || password.length < 16) return null
 
-export function logout() {
-  localStorage.removeItem("isLoggedIn");
-}
+        const validPassword = matchesSecret(input.data.password, password)
+        if (!validPassword || input.data.email.toLowerCase() !== email.toLowerCase()) return null
+        return { id: "admin", name: "BlueCode administrator", email }
+      },
+    }),
+  ],
+})

@@ -1,41 +1,54 @@
-import { NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
-import prisma from '../../../lib/prisma'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import nodemailer from "nodemailer"
+import prisma from "@/lib/prisma"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { errorResponse, readJson, verifyOrigin } from "@/lib/requests"
 
-export const runtime = 'nodejs'
+const fields = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().email().max(191),
+  phone: z.string().trim().max(50).optional(),
+  subject: z.string().trim().max(160).optional(),
+  message: z.string().trim().min(10).max(4_000),
+  website: z.string().max(191).optional(),
+})
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    // Save to DB
-    const saved = await prisma.contactMessage.create({ data: {
-      name: body.name,
-      email: body.email,
-      message: body.message,
-    }})
+    verifyOrigin(request)
+    const { website, ...data } = await readJson(request, fields)
+    if (website) return NextResponse.json({ ok: true })
+    await enforceRateLimit(request, "contact", 10)
+    await prisma.contactMessage.create({ data })
 
-    // Send email
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
-    })
-
-    const mailOptions = {
-      from: process.env.SMTP_FROM || body.email,
-      to: process.env.CONTACT_RECEIVER_EMAIL || process.env.SMTP_USER,
-      subject: `New contact message from ${body.name}`,
-      text: `Name: ${body.name}\nEmail: ${body.email}\n\n${body.message}`,
+    const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM, CONTACT_RECEIVER_EMAIL } = process.env
+    if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+      const secure = process.env.SMTP_SECURE === "true"
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || (secure ? 465 : 587)),
+        secure,
+        requireTLS: !secure,
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+        connectionTimeout: 5_000,
+        greetingTimeout: 5_000,
+        socketTimeout: 8_000,
+        disableFileAccess: true,
+        disableUrlAccess: true,
+      })
+      await transporter.sendMail({
+        from: SMTP_FROM || SMTP_USER,
+        to: CONTACT_RECEIVER_EMAIL || SMTP_USER,
+        replyTo: data.email,
+        subject: "New BlueCode enquiry",
+        text: [`Name: ${data.name}`, `Email: ${data.email}`, `Phone: ${data.phone || "—"}`,
+          `Subject: ${data.subject || "—"}`, "", data.message].join("\n"),
+      }).catch(() => console.error("Contact message saved but email notification failed"))
     }
 
-    if (transporter) {
-      await transporter.sendMail(mailOptions)
-    }
-
-    return NextResponse.json({ ok: true, saved })
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json({ error: 'failed' }, { status: 500 })
+    return NextResponse.json({ ok: true }, { status: 201 })
+  } catch (error) {
+    return errorResponse(error, "Contact submission failed")
   }
 }
