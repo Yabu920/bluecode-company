@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Services",
-  description: "Explore website development, mobile app development and digital marketing from BlueCode.",
+  title: "Website, App and Digital Marketing Services",
+  description: "BlueCode provides website development, mobile app development, and digital marketing for Ethiopian businesses from Addis Ababa.",
   alternates: { canonical: "/services" },
 }
 

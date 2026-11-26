@@ -5,6 +5,7 @@ import { LanguageProvider } from "./contexts/language-context"
 import { Navigation } from "./components/navigation"
 import { Footer } from "./components/footer"
 import { getSiteUrl } from "@/lib/site"
+import { businessDescription as description, businessName as title } from "@/lib/structured-data"
 
 const inter = LocalFont({
   src: [
@@ -14,9 +15,6 @@ const inter = LocalFont({
   display: "swap",
   fallback: ["Noto Sans Ethiopic", "Arial", "sans-serif"],
 })
-
-const title = "BlueCode Technology Solution"
-const description = "BlueCode develops websites and mobile apps and provides digital marketing for Ethiopian businesses in Addis Ababa."
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),

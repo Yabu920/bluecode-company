@@ -4,18 +4,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { Code2, Smartphone, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FeaturedProjects } from "./components/featured-projects"
 import { useLanguage } from "./contexts/language-context"
 
 const serviceIcons = { web: Code2, app: Smartphone, marketing: TrendingUp }
-const work = [
-  { name: "Konjo Buna Coffee Export", website: "https://konjobuna.com",
-    en: "A bilingual export website for Ethiopian coffee buyers.", am: "ለኢትዮጵያ ቡና ገዢዎች የተዘጋጀ ባለሁለት ቋንቋ ድረ ገጽ።" },
-  { name: "Omega Sportswear Garment", website: "https://omegagarment.com.et",
-    en: "A product showcase for a local sportswear manufacturer.", am: "የሀገር ውስጥ የስፖርት ልብስ አምራች ምርቶችን የሚያሳይ ድረ ገጽ።" },
-  { name: "24 Technology School",
-    en: "A school management system for everyday administration.", am: "የትምህርት ቤቱን ዕለታዊ አስተዳደር የሚያግዝ ሥርዓት።" },
-]
-
 export default function HomePage() {
   const { language, translations } = useLanguage()
   const t = translations[language]
@@ -72,25 +64,7 @@ export default function HomePage() {
         </ul>
       </section>
 
-      <section className="border-y border-blue-100 bg-blue-50/60" aria-labelledby="work-heading">
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-          <h2 id="work-heading" className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-            {en ? "Selected projects" : "የተመረጡ ፕሮጀክቶች"}
-          </h2>
-          <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-            {work.map((item) => (
-              <li key={item.name} className="rounded-2xl border border-blue-100 bg-white p-5 sm:p-6">
-                <h3 lang="en" className="text-lg font-bold text-slate-950">{item.name}</h3>
-                <p className="mt-2 text-slate-600">{item[language]}</p>
-                {item.website && <a className="mt-4 inline-block py-2 font-semibold text-blue-700 underline underline-offset-4" href={item.website}
-                  aria-label={en ? `Visit website for ${item.name}` : `ድረ ገጹን ይጎብኙ፣ ${item.name}`}>
-                  {en ? "Visit website" : "ድረ ገጹን ይጎብኙ"}
-                </a>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <FeaturedProjects />
 
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
         <div className="rounded-2xl bg-blue-800 px-6 py-9 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:px-10">

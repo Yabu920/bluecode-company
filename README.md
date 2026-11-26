@@ -41,3 +41,9 @@ If the old `.env` was committed, rotate the old database, SMTP, Cloudinary, sess
 - Contact submissions are stored before sending the best-effort SMTP notification. Review the dashboard inbox if mail is unavailable.
 - The blog displays the bilingual summaries in source. Analytics endpoints currently report an unconfigured status. Live GA4 and Search Console require an integration and separately provisioned credentials.
 - Back up MySQL and confirm the restore path before promoting a new release. Test load and cache behavior on the actual hosting plan.
+
+## Search and AI discovery
+
+The homepage identifies BlueCode and its public contact information with Organization and WebSite JSON-LD. The services page includes Service JSON-LD and project questions answered in visible English and Amharic copy. Featured case studies live in `lib/featured-work.ts`. Adding a case study there updates the homepage, portfolio and sitemap. Use public project details that the client has approved for publication.
+
+After going live, verify the canonical URLs and crawler rules on the public domain, submit `/sitemap.xml` in Google Search Console, and confirm that the hosting firewall permits public pages to be fetched. `robots.txt` explicitly allows OAI-SearchBot to crawl public pages for ChatGPT search and keeps API paths excluded from crawling.

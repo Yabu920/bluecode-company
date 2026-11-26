@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { projectImageSource } from "@/lib/project-image"
+import { FeaturedProjects } from "../components/featured-projects"
 import { useLanguage } from "../contexts/language-context"
 
 export interface PublicProject {
@@ -34,6 +35,7 @@ export default function PortfolioView({ projects, page, hasNext, unavailable }: 
           {en ? "Explore the websites and software we build." : "የሠራናቸውን ድረ ገጾች እና ሶፍትዌሮች ይመልከቱ።"}
         </p>
       </section>
+      {page === 1 && <FeaturedProjects />}
       <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16" aria-label={en ? "Projects" : "ፕሮጀክቶች"}>
         {projects.length ? (
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -60,10 +62,7 @@ export default function PortfolioView({ projects, page, hasNext, unavailable }: 
         ) : (
           <div className="rounded-2xl border border-slate-200 p-6 sm:p-8">
             <p>{unavailable ? (en ? "The project gallery is temporarily unavailable." : "የፕሮጀክቶች ማሳያው ለጊዜው አይገኝም።") :
-              (en ? "There are no projects on this page yet." : "በዚህ ገጽ ላይ ገና ፕሮጀክቶች የሉም።")}</p>
-            <Link href="/#work-heading" className="mt-3 inline-block font-semibold text-blue-800 underline underline-offset-4">
-              {en ? "See selected projects" : "የተመረጡ ፕሮጀክቶችን ይመልከቱ"}
-            </Link>
+              (en ? "There are no additional projects on this page." : "በዚህ ገጽ ላይ ተጨማሪ ፕሮጀክቶች የሉም።")}</p>
           </div>
         )}
         {(page > 1 || hasNext) && <nav className="mt-8 flex flex-wrap items-center gap-3" aria-label={en ? "Portfolio pages" : "የፕሮጀክቶች ገጾች"}>
